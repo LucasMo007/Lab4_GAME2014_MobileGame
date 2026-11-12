@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 2D 平台玩家控制：左右移动、跳跃、地面检测、翻转。
+/// 2D 平台玩家控制：左右移动、跳跃、地面检测、翻转、动画。
 /// 键盘（PC 测试）和 Joystick Pack 虚拟摇杆 + 跳跃按钮（手机）都能用。
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
@@ -28,11 +28,18 @@ public class PlayerBehaviour : MonoBehaviour
     public float joystickDeadZone = 0.2f;
 
     protected Rigidbody2D rb;
+    private Animator animator;
     private bool jumpRequested;             // 由跳跃按钮或键盘设置
+
+    // Animator 参数名，必须和 Animator 窗口里的一模一样
+    private static readonly int SpeedHash = Animator.StringToHash("speed");
+    private static readonly int IsGroundedHash = Animator.StringToHash("isGrounded");
+    private static readonly int YVelocityHash = Animator.StringToHash("yVelocity");
 
     protected virtual void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        animator = GetComponent<Animator>();
 
         if (leftJoystick == null)
         {
@@ -54,6 +61,7 @@ public class PlayerBehaviour : MonoBehaviour
         CheckGrounded();
         Move();
         Jump();
+        UpdateAnimator();
     }
 
     // ---------------- Input ----------------
@@ -127,6 +135,17 @@ public class PlayerBehaviour : MonoBehaviour
         Vector3 scale = transform.localScale;
         scale.x = Mathf.Abs(scale.x) * (x > 0 ? 1.0f : -1.0f);
         transform.localScale = scale;
+    }
+
+    // ---------------- Animation ----------------
+
+    private void UpdateAnimator()
+    {
+        if (animator == null) return;
+
+        animator.SetFloat(SpeedHash, Mathf.Abs(rb.velocity.x));
+        animator.SetBool(IsGroundedHash, isGrounded);
+        animator.SetFloat(YVelocityHash, rb.velocity.y);
     }
 
     void OnDrawGizmos()
