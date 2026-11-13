@@ -22,6 +22,10 @@ public class PlayerBehaviour : MonoBehaviour
     public LayerMask groundLayerMask;       // 只勾选 Ground 层
     public bool isGrounded;
 
+    [Header("Box (not walkable)")]
+    public LayerMask boxLayerMask;          // 只勾选 Box 层
+    public float slideOffForce = 25.0f;     // 站到箱子上时把角色推下去的力
+
     [Header("Mobile Controls")]
     public Joystick leftJoystick;           // 拖入 Fixed / Floating / Variable Joystick
     [Range(0.0f, 1.0f)]
@@ -64,6 +68,7 @@ public class PlayerBehaviour : MonoBehaviour
     protected virtual void FixedUpdate()
     {
         CheckGrounded();
+        SlideOffBox();
         Move();
         Jump();
         UpdateAnimator();
@@ -99,6 +104,19 @@ public class PlayerBehaviour : MonoBehaviour
     {
         if (groundPoint == null) return;
         isGrounded = Physics2D.OverlapCircle(groundPoint.position, groundRadius, groundLayerMask);
+    }
+
+    // 箱子不能当平台站：脚底碰到箱子时，把角色往离箱子中心远的一侧推下去
+    private void SlideOffBox()
+    {
+        if (groundPoint == null || isGrounded) return;
+
+        Collider2D box = Physics2D.OverlapCircle(groundPoint.position, groundRadius, boxLayerMask);
+        if (box == null) return;
+
+        float side = Mathf.Sign(transform.position.x - box.bounds.center.x);
+        if (side == 0.0f) side = 1.0f;
+        rb.AddForce(Vector2.right * side * slideOffForce);
     }
 
     private void Move()
