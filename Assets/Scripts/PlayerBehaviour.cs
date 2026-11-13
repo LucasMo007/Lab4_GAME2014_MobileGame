@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 2D 平台玩家控制：左右移动、跳跃、地面检测、翻转、动画。
+/// 2D 平台玩家控制：左右移动、跳跃、地面检测、翻转、动画、存档点复活。
 /// 键盘（PC 测试）和 Joystick Pack 虚拟摇杆 + 跳跃按钮（手机）都能用。
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
@@ -27,7 +27,11 @@ public class PlayerBehaviour : MonoBehaviour
     [Range(0.0f, 1.0f)]
     public float joystickDeadZone = 0.2f;
 
+    [Header("Respawn")]
+    public Transform spawnPoint;            // 初始出生点（可选，不填就用开局位置）
+
     protected Rigidbody2D rb;
+    private Vector3 currentRespawnPosition;
     private Animator animator;
     private bool jumpRequested;             // 由跳跃按钮或键盘设置
 
@@ -40,6 +44,7 @@ public class PlayerBehaviour : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+        currentRespawnPosition = (spawnPoint != null) ? spawnPoint.position : transform.position;
 
         if (leftJoystick == null)
         {
@@ -146,6 +151,23 @@ public class PlayerBehaviour : MonoBehaviour
         animator.SetFloat(SpeedHash, Mathf.Abs(rb.velocity.x));
         animator.SetBool(IsGroundedHash, isGrounded);
         animator.SetFloat(YVelocityHash, rb.velocity.y);
+    }
+
+    // ---------------- Checkpoint / Respawn ----------------
+
+    public void SetRespawnPoint(Vector3 position)
+    {
+        currentRespawnPosition = position;
+    }
+
+    /// <summary>
+    /// 掉进死亡区时调用。virtual：Lab 6 可以重写，加扣血、受伤等。
+    /// </summary>
+    public virtual void Respawn()
+    {
+        rb.velocity = Vector2.zero;
+        rb.angularVelocity = 0.0f;
+        transform.position = currentRespawnPosition;
     }
 
     void OnDrawGizmos()
