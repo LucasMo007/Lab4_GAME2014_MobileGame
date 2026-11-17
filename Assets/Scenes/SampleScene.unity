@@ -322,7 +322,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 519420028}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.1111114, y: -0.97998995, z: -10}
+  m_LocalPosition: {x: -1.122674, y: -0.97998995, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -724,7 +724,6 @@ GameObject:
   - component: {fileID: 763756874}
   - component: {fileID: 763756880}
   - component: {fileID: 763756879}
-  - component: {fileID: 763756878}
   - component: {fileID: 763756877}
   - component: {fileID: 763756876}
   - component: {fileID: 763756875}
@@ -954,45 +953,6 @@ TilemapCollider2D:
   m_Offset: {x: 0, y: 0}
   m_MaximumTileChangeCount: 1000
   m_ExtrusionFactor: 0.00001
---- !u!114 &763756878
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 763756873}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e755d5af3e92eb24db1b843995b4d797, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  grassTile: {fileID: 11400000, guid: a3c35c52becf54741baa41bafa882648, type: 2}
-  dirtTile: {fileID: 11400000, guid: 2a488cfbf7dd5da4d9cdb462cbb62c10, type: 2}
-  leftX: -12
-  bottomY: -6
-  map: 'D.....................................................................................D
-
-    D.......................................................................GGGG..........D
-
-    D.....................................................................................D
-
-    D...................GGGGG...........................GGGG...........GGG................D
-
-    D.....................................................................................D
-
-    D.....................................................................................D
-
-    D..............GGGG..........GGG................GGG...........GGG.....................D
-
-    D.....................................................................................D
-
-    D.....................................................................................D
-
-    GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG...GGGGGGGGGGGGGGGGGGGGGGGG...GGGGGGGGGGGGGGGGGGGGG
-
-    DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD...DDDDDDDDDDDDDDDDDDDDDDDD...DDDDDDDDDDDDDDDDDDDDD
-
-    DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD...DDDDDDDDDDDDDDDDDDDDDDDD...DDDDDDDDDDDDDDDDDDDDD'
 --- !u!483693784 &763756879
 TilemapRenderer:
   m_ObjectHideFlags: 0
