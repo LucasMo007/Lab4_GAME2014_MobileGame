@@ -1,22 +1,26 @@
 using UnityEngine;
 
-
+/// <summary>
+/// 2D platformer player controller: movement, jumping, ground check,
+/// sprite flipping, animation, checkpoint respawn and taking damage.
+/// Works with the keyboard (PC) and the Joystick Pack joystick + jump button (mobile).
+/// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
-public class PlayerBehaviour : MonoBehaviour
+public class PlayerBehaviour : MonoBehaviour, IDamageable
 {
     [Header("Movement")]
     public float horizontalForce = 20.0f;
     public float maxSpeed = 5.0f;
     public float jumpForce = 12.0f;
     [Range(0.0f, 1.0f)]
-    public float airControlFactor = 0.6f;   
+    public float airControlFactor = 0.6f;   // fraction of move force applied in the air
     [Range(0.0f, 1.0f)]
-    public float groundFriction = 0.85f;    
+    public float groundFriction = 0.85f;    // slowdown when no input (lower = stops faster)
 
     [Header("Ground Detection")]
-    public Transform groundPoint;           
+    public Transform groundPoint;           // empty child at the player's feet
     public float groundRadius = 0.15f;
-    public LayerMask groundLayerMask;        // Ground layer (level tiles + box)
+    public LayerMask groundLayerMask;       // Ground layer (level tiles + box)
     public bool isGrounded;
 
     [Header("Mobile Controls")]
@@ -27,10 +31,21 @@ public class PlayerBehaviour : MonoBehaviour
     [Header("Respawn")]
     public Transform spawnPoint;            // optional, defaults to the start position
 
+    [Header("Health / Damage")]
+    public int maxHealth = 3;
+    public int currentHealth;
+    public float invulnerableTime = 1.0f;   // no damage for this long after a hit
+    public float hurtStunTime = 0.3f;       // no move input during knockback
+    public Vector2 knockbackForce = new Vector2(6.0f, 6.0f);
+    public CameraShakeBehaviour cameraShake;
+
     protected Rigidbody2D rb;
     private Vector3 currentRespawnPosition;
     private Animator animator;
     private bool jumpRequested;             // set by the keyboard or the jump button
+    private SpriteRenderer spriteRenderer;
+    private float invulnerableTimer;
+    private float hurtTimer;
 
     // Animator parameter names (must match the Animator window exactly)
     private static readonly int SpeedHash = Animator.StringToHash("speed");
@@ -41,11 +56,17 @@ public class PlayerBehaviour : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        currentHealth = maxHealth;
         currentRespawnPosition = (spawnPoint != null) ? spawnPoint.position : transform.position;
 
         if (leftJoystick == null)
         {
             leftJoystick = FindObjectOfType<Joystick>();
+        }
+        if (cameraShake == null)
+        {
+            cameraShake = FindObjectOfType<CameraShakeBehaviour>();
         }
     }
 
@@ -56,17 +77,19 @@ public class PlayerBehaviour : MonoBehaviour
         {
             jumpRequested = true;
         }
+
+        UpdateDamageTimers();
     }
 
     protected virtual void FixedUpdate()
     {
         CheckGrounded();
-      
         Move();
         Jump();
         UpdateAnimator();
     }
 
+    // ---------------- Input ----------------
 
     protected float GetHorizontalInput()
     {
@@ -82,13 +105,15 @@ public class PlayerBehaviour : MonoBehaviour
         return Mathf.Abs(stick) > Mathf.Abs(keyboard) ? stick : keyboard;
     }
 
-   
+    /// <summary>
+    /// Called by the UI jump button (JumpButtonBehaviour).
+    /// </summary>
     public void RequestJump()
     {
         jumpRequested = true;
     }
 
-   
+    // ---------------- Movement ----------------
 
     private void CheckGrounded()
     {
@@ -96,9 +121,10 @@ public class PlayerBehaviour : MonoBehaviour
         isGrounded = Physics2D.OverlapCircle(groundPoint.position, groundRadius, groundLayerMask);
     }
 
-
     private void Move()
     {
+        if (hurtTimer > 0.0f) return;       // being knocked back: ignore input
+
         float x = GetHorizontalInput();
 
         if (Mathf.Abs(x) > 0.01f)
@@ -138,7 +164,8 @@ public class PlayerBehaviour : MonoBehaviour
         transform.localScale = scale;
     }
 
-   
+    // ---------------- Animation ----------------
+
     private void UpdateAnimator()
     {
         if (animator == null) return;
@@ -148,17 +175,68 @@ public class PlayerBehaviour : MonoBehaviour
         animator.SetFloat(YVelocityHash, rb.velocity.y);
     }
 
+    // ---------------- Checkpoint / Respawn ----------------
+
     public void SetRespawnPoint(Vector3 position)
     {
         currentRespawnPosition = position;
     }
 
-
+    /// <summary>
+    /// Called by the dead plane. Virtual so later labs can add damage, etc.
+    /// </summary>
     public virtual void Respawn()
     {
         rb.velocity = Vector2.zero;
         rb.angularVelocity = 0.0f;
         transform.position = currentRespawnPosition;
+    }
+
+    // ---------------- Damage ----------------
+
+    /// <summary>
+    /// IDamageable: called by enemies. Lose health, get knocked back,
+    /// shake the camera, then stay invulnerable for a short time.
+    /// </summary>
+    public void TakeDamage(int amount, Vector2 sourcePosition)
+    {
+        if (invulnerableTimer > 0.0f) return;   // still flashing from the last hit
+
+        currentHealth -= amount;
+        invulnerableTimer = invulnerableTime;
+        hurtTimer = hurtStunTime;
+
+        // Push away from whatever hit us
+        float side = (transform.position.x >= sourcePosition.x) ? 1.0f : -1.0f;
+        rb.velocity = new Vector2(side * knockbackForce.x, knockbackForce.y);
+
+        if (cameraShake != null)
+        {
+            cameraShake.Shake();
+        }
+
+        if (currentHealth <= 0)
+        {
+            // Out of health: back to the last checkpoint with full health
+            currentHealth = maxHealth;
+            Respawn();
+        }
+    }
+
+    private void UpdateDamageTimers()
+    {
+        if (hurtTimer > 0.0f) hurtTimer -= Time.deltaTime;
+
+        if (invulnerableTimer > 0.0f)
+        {
+            invulnerableTimer -= Time.deltaTime;
+
+            // Blink while invulnerable so the hit is easy to see
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.enabled = invulnerableTimer <= 0.0f || Mathf.FloorToInt(invulnerableTimer * 10.0f) % 2 == 0;
+            }
+        }
     }
 
     void OnDrawGizmos()
