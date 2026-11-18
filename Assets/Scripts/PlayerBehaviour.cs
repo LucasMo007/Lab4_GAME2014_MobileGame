@@ -16,12 +16,8 @@ public class PlayerBehaviour : MonoBehaviour
     [Header("Ground Detection")]
     public Transform groundPoint;           
     public float groundRadius = 0.15f;
-    public LayerMask groundLayerMask;       
+    public LayerMask groundLayerMask;        // Ground layer (level tiles + box)
     public bool isGrounded;
-
-    [Header("Box (not walkable)")]
-    public LayerMask boxLayerMask;          
-    public float slideOffForce = 25.0f;     
 
     [Header("Mobile Controls")]
     public Joystick leftJoystick;
@@ -65,7 +61,7 @@ public class PlayerBehaviour : MonoBehaviour
     protected virtual void FixedUpdate()
     {
         CheckGrounded();
-        SlideOffBox();
+      
         Move();
         Jump();
         UpdateAnimator();
@@ -100,18 +96,6 @@ public class PlayerBehaviour : MonoBehaviour
         isGrounded = Physics2D.OverlapCircle(groundPoint.position, groundRadius, groundLayerMask);
     }
 
-    // The box is not a platform: if the feet touch it, push the player off the nearer side
-    private void SlideOffBox()
-    {
-        if (groundPoint == null || isGrounded) return;
-
-        Collider2D box = Physics2D.OverlapCircle(groundPoint.position, groundRadius, boxLayerMask);
-        if (box == null) return;
-
-        float side = Mathf.Sign(transform.position.x - box.bounds.center.x);
-        if (side == 0.0f) side = 1.0f;
-        rb.AddForce(Vector2.right * side * slideOffForce);
-    }
 
     private void Move()
     {
@@ -155,7 +139,6 @@ public class PlayerBehaviour : MonoBehaviour
     }
 
    
-
     private void UpdateAnimator()
     {
         if (animator == null) return;
@@ -164,8 +147,6 @@ public class PlayerBehaviour : MonoBehaviour
         animator.SetBool(IsGroundedHash, isGrounded);
         animator.SetFloat(YVelocityHash, rb.velocity.y);
     }
-
-
 
     public void SetRespawnPoint(Vector3 position)
     {
