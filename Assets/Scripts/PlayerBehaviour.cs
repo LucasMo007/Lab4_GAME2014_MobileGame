@@ -2,7 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// 2D platformer player controller: movement, jumping, ground check,
-/// sprite flipping, animation, checkpoint respawn and taking damage.
+/// sprite flipping, animation, checkpoint respawn, taking damage,
+/// health bar updates and sound effects.
 /// Works with the keyboard (PC) and the Joystick Pack joystick + jump button (mobile).
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
@@ -38,6 +39,7 @@ public class PlayerBehaviour : MonoBehaviour, IDamageable
     public float hurtStunTime = 0.3f;       // no move input during knockback
     public Vector2 knockbackForce = new Vector2(6.0f, 6.0f);
     public CameraShakeBehaviour cameraShake;
+    public HealthBarBehaviour healthBar;    // UI Slider with HealthBarBehaviour
 
     protected Rigidbody2D rb;
     private Vector3 currentRespawnPosition;
@@ -67,6 +69,14 @@ public class PlayerBehaviour : MonoBehaviour, IDamageable
         if (cameraShake == null)
         {
             cameraShake = FindObjectOfType<CameraShakeBehaviour>();
+        }
+        if (healthBar == null)
+        {
+            healthBar = FindObjectOfType<HealthBarBehaviour>();
+        }
+        if (healthBar != null)
+        {
+            healthBar.SetMaxHealth(maxHealth);
         }
     }
 
@@ -152,6 +162,7 @@ public class PlayerBehaviour : MonoBehaviour, IDamageable
         {
             rb.velocity = new Vector2(rb.velocity.x, 0.0f);
             rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+            PlaySound(SoundFX.Jump);
         }
         jumpRequested = false;  // always clear, so a mid-air press doesn't jump on landing
     }
@@ -218,8 +229,27 @@ public class PlayerBehaviour : MonoBehaviour, IDamageable
         if (currentHealth <= 0)
         {
             // Out of health: back to the last checkpoint with full health
+            PlaySound(SoundFX.Death);
             currentHealth = maxHealth;
             Respawn();
+        }
+        else
+        {
+            PlaySound(SoundFX.Hurt);
+        }
+
+        if (healthBar != null)
+        {
+            healthBar.SetHealth(currentHealth);
+        }
+    }
+
+    // SoundManager is optional: the game still runs without one in the scene
+    private void PlaySound(SoundFX sound)
+    {
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlaySFX(sound);
         }
     }
 
