@@ -127,12 +127,17 @@ public class EnemyBehaviour : MonoBehaviour
         return Physics2D.Raycast(origin, Vector2.right * direction, wallRayLength, groundLayerMask);
     }
 
-    /// <summary>Standing on the ground right now? (used by the jumping frog)</summary>
+    /// <summary>
+    /// Standing on the ground right now? (used by the jumping frog)
+    /// Checks a thin box under the whole width of the feet, so it still counts
+    /// as grounded when only one foot is on the edge of a box or platform.
+    /// </summary>
     protected bool IsGrounded()
     {
         Bounds b = bodyCollider.bounds;
-        Vector2 origin = new Vector2(b.center.x, b.min.y + 0.05f);
-        return Physics2D.Raycast(origin, Vector2.down, 0.15f, groundLayerMask);
+        Vector2 feetCenter = new Vector2(b.center.x, b.min.y - 0.05f);
+        Vector2 feetSize = new Vector2(b.size.x * 0.9f, 0.1f);
+        return Physics2D.OverlapBox(feetCenter, feetSize, 0.0f, groundLayerMask) != null;
     }
 
     // ---------------- Damage ----------------
